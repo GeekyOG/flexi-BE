@@ -1,6 +1,11 @@
 const { Sequelize } = require("sequelize");
 require("dotenv").config();
 
+// const sequelize = new Sequelize("aoudbbke_flexi", "aoudbbke_flexi", "yM8Rm}ea&t&J", {
+//   host: "localhost",
+//   dialect: "mysql",
+// });
+
 const sequelize = new Sequelize("flexishops", "root", "", {
   host: "localhost",
   dialect: "mysql",

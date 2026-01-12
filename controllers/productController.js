@@ -1,4 +1,4 @@
-const { Product, Vendor, Category } = require("../models");
+const { Product, Vendor, Category, ProductImage } = require("../models");
 const {
   getPagination,
   getPagingData,
@@ -98,10 +98,18 @@ exports.getAllProducts = async (req, res) => {
           attributes: ["id", "name", "businessName"],
         },
         { model: Category, as: "category", attributes: ["id", "name"] },
+        {
+          model: ProductImage,
+          as: "images",
+          attributes: ["id", "isDisplay", "displayOrder", "type"],
+          // where: { isDisplay: true },
+        },
       ],
       order: [["createdAt", "DESC"]],
       distinct: true,
     });
+
+    console.log(data);
 
     const response = getPagingData(data, page, limit);
 
@@ -128,6 +136,12 @@ exports.getProduct = async (req, res) => {
           attributes: ["id", "name", "businessName", "email", "phone"],
         },
         { model: Category, as: "category", attributes: ["id", "name"] },
+        {
+          model: ProductImage,
+          as: "images",
+          attributes: ["id", "isDisplay", "displayOrder", "type"],
+          where: { isDisplay: true },
+        },
       ],
     });
 
@@ -235,6 +249,12 @@ exports.getTopSellingProducts = async (req, res) => {
           as: "vendor",
           attributes: ["id", "name", "businessName"],
         },
+        {
+          model: ProductImage,
+          as: "images",
+          attributes: ["id", "isDisplay", "displayOrder", "type"],
+          where: { isDisplay: true },
+        },
         { model: Category, as: "category", attributes: ["id", "name"] },
       ],
     });
@@ -264,6 +284,12 @@ exports.getMostViewedProducts = async (req, res) => {
           model: Vendor,
           as: "vendor",
           attributes: ["id", "name", "businessName"],
+        },
+        {
+          model: ProductImage,
+          as: "images",
+          attributes: ["id", "isDisplay", "displayOrder", "type"],
+          where: { isDisplay: true },
         },
         { model: Category, as: "category", attributes: ["id", "name"] },
       ],

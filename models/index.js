@@ -537,6 +537,63 @@ const Wishlist = sequelize.define(
   }
 );
 
+const ProductImage = sequelize.define(
+  "ProductImage",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    productId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "Products",
+        key: "id",
+      },
+      onDelete: "CASCADE",
+    },
+    image: {
+      type: DataTypes.BLOB("long"),
+      allowNull: false,
+    },
+    imageUrl: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    type: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "image/jpeg",
+    },
+    isDisplay: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+      comment: "Set to true for main/display image",
+    },
+    displayOrder: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      comment: "Order in which images should be displayed",
+    },
+  },
+  {
+    tableName: "ProductImages",
+    timestamps: true,
+    indexes: [
+      {
+        fields: ["productId"],
+      },
+      {
+        fields: ["productId", "isDisplay"],
+      },
+    ],
+  }
+);
+
 // Associations
 Vendor.hasMany(Product, { foreignKey: "vendorId", as: "products" });
 Product.belongsTo(Vendor, { foreignKey: "vendorId", as: "vendor" });
@@ -578,6 +635,12 @@ Wishlist.belongsTo(Customer, { foreignKey: "customerId", as: "customer" });
 
 Product.hasMany(Wishlist, { foreignKey: "productId", as: "wishlistItems" });
 Wishlist.belongsTo(Product, { foreignKey: "productId", as: "product" });
+Product.hasMany(ProductImage, {
+  foreignKey: "productId",
+  as: "images",
+  onDelete: "CASCADE",
+});
+ProductImage.belongsTo(Product, { foreignKey: "productId", as: "product" });
 
 module.exports = {
   Category,
@@ -591,4 +654,5 @@ module.exports = {
   Payment,
   Cart,
   Wishlist,
+  ProductImage,
 };

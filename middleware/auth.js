@@ -3,8 +3,8 @@ const { User, Vendor, Customer } = require("../models");
 
 // Generate JWT Token
 const generateToken = (id, type) => {
-  return jwt.sign({ id, type }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE,
+  return jwt.sign({ id, type }, "your_jwt_secret_key_here", {
+    expiresIn: "1d",
   });
 };
 
@@ -21,16 +21,14 @@ const protect = (userTypes = ["user", "vendor", "customer"]) => {
     }
 
     if (!token) {
-      return res
-        .status(401)
-        .json({
-          success: false,
-          message: "Not authorized to access this route",
-        });
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized to access this route",
+      });
     }
 
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, "your_jwt_secret_key_here");
 
       if (!userTypes.includes(decoded.type)) {
         return res
@@ -63,12 +61,10 @@ const protect = (userTypes = ["user", "vendor", "customer"]) => {
       req.userType = decoded.type;
       next();
     } catch (error) {
-      return res
-        .status(401)
-        .json({
-          success: false,
-          message: "Not authorized to access this route",
-        });
+      return res.status(401).json({
+        success: false,
+        message: "Not authorized to access this route",
+      });
     }
   };
 };

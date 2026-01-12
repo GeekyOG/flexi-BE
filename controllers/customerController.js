@@ -42,7 +42,7 @@ exports.registerCustomer = async (req, res) => {
         email: customer.email,
         kycStatus: customer.kycStatus,
       },
-      token,
+      token: token,
     });
   } catch (error) {
     res.status(500).json({
@@ -83,7 +83,7 @@ exports.loginCustomer = async (req, res) => {
         email: customer.email,
         kycStatus: customer.kycStatus,
       },
-      token,
+      token: token,
     });
   } catch (error) {
     res.status(500).json({

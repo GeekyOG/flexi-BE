@@ -10,7 +10,9 @@ const saleRoutes = require("./saleRoutes");
 const cartRoutes = require("./cartRoutes");
 const wishlistRoutes = require("./wishlistRoutes");
 const kycRoutes = require("./kycRoutes");
+const productImageRoutes = require("./productImageRoutes");
 
+router.use("/product-images", productImageRoutes);
 router.use("/products", productRoutes);
 router.use("/categories", categoryRoutes);
 router.use("/vendors", vendorRoutes);
