@@ -215,6 +215,8 @@ exports.clearCart = async (req, res) => {
 
 // Add to Wishlist
 exports.addToWishlist = async (req, res) => {
+  console.log(req.body.productId);
+
   try {
     const { productId } = req.body;
     const customerId = req.user.id;

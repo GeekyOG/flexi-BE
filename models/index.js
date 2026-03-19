@@ -28,7 +28,7 @@ const Category = sequelize.define(
   {
     tableName: "Categories",
     timestamps: true,
-  }
+  },
 );
 
 // Self-referencing association for parent categories
@@ -92,7 +92,7 @@ const Vendor = sequelize.define(
         }
       },
     },
-  }
+  },
 );
 
 Vendor.prototype.comparePassword = async function (candidatePassword) {
@@ -136,6 +136,14 @@ const Customer = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    resetPasswordToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    resetPasswordExpires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     tableName: "Customers",
@@ -152,7 +160,7 @@ const Customer = sequelize.define(
         }
       },
     },
-  }
+  },
 );
 
 Customer.prototype.comparePassword = async function (candidatePassword) {
@@ -196,6 +204,14 @@ const User = sequelize.define(
       type: DataTypes.ENUM("admin", "manager", "staff"),
       defaultValue: "staff",
     },
+    resetPasswordToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    resetPasswordExpires: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
   },
   {
     tableName: "Users",
@@ -212,7 +228,7 @@ const User = sequelize.define(
         }
       },
     },
-  }
+  },
 );
 
 User.prototype.comparePassword = async function (candidatePassword) {
@@ -273,8 +289,52 @@ const Product = sequelize.define(
   {
     tableName: "Products",
     timestamps: true,
-  }
+  },
 );
+
+const Review = sequelize.define(
+  "Review",
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    customerId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: { model: "Customers", key: "id" },
+    },
+    productId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: { model: "Products", key: "id" },
+    },
+    rating: {
+      type: DataTypes.TINYINT.UNSIGNED,
+      allowNull: false,
+      validate: { min: 1, max: 5 },
+    },
+    comment: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+  },
+  {
+    tableName: "Reviews",
+    timestamps: true,
+    indexes: [
+      // One review per customer per product
+      {
+        unique: true,
+        fields: ["customerId", "productId"],
+        name: "unique_customer_product_review",
+      },
+    ],
+  },
+);
+
+module.exports = Review;
 
 // Customer Address Model
 const CustomerAddress = sequelize.define(
@@ -297,11 +357,19 @@ const CustomerAddress = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: false,
     },
+    label: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     city: {
       type: DataTypes.STRING,
       allowNull: false,
     },
     state: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    country: {
       type: DataTypes.STRING,
       allowNull: false,
     },
@@ -317,7 +385,7 @@ const CustomerAddress = sequelize.define(
   {
     tableName: "CustomerAddresses",
     timestamps: true,
-  }
+  },
 );
 
 // Sale Model
@@ -388,7 +456,7 @@ const Sale = sequelize.define(
   {
     tableName: "Sales",
     timestamps: true,
-  }
+  },
 );
 
 // Payment Model
@@ -429,7 +497,7 @@ const Payment = sequelize.define(
   {
     tableName: "Payments",
     timestamps: true,
-  }
+  },
 );
 
 // KYC Model
@@ -451,11 +519,20 @@ const Kyc = sequelize.define(
     },
     doc: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true, // Made nullable since we're adding image field
     },
     docType: {
       type: DataTypes.STRING,
       allowNull: true,
+    },
+    image: {
+      type: DataTypes.BLOB("long"),
+      allowNull: false,
+    },
+    imageType: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: "MIME type of the image (e.g., image/jpeg, image/png)",
     },
     status: {
       type: DataTypes.ENUM("pending", "approved", "rejected"),
@@ -465,9 +542,8 @@ const Kyc = sequelize.define(
   {
     tableName: "Kycs",
     timestamps: true,
-  }
+  },
 );
-
 // Cart Model
 const Cart = sequelize.define(
   "Cart",
@@ -502,7 +578,7 @@ const Cart = sequelize.define(
   {
     tableName: "Carts",
     timestamps: true,
-  }
+  },
 );
 
 // Wishlist Model
@@ -534,7 +610,7 @@ const Wishlist = sequelize.define(
   {
     tableName: "Wishlists",
     timestamps: true,
-  }
+  },
 );
 
 const ProductImage = sequelize.define(
@@ -591,7 +667,7 @@ const ProductImage = sequelize.define(
         fields: ["productId", "isDisplay"],
       },
     ],
-  }
+  },
 );
 
 // Associations
@@ -642,6 +718,11 @@ Product.hasMany(ProductImage, {
 });
 ProductImage.belongsTo(Product, { foreignKey: "productId", as: "product" });
 
+Review.belongsTo(Customer, { as: "customer", foreignKey: "customerId" });
+Review.belongsTo(Product, { as: "product", foreignKey: "productId" });
+Customer.hasMany(Review, { as: "reviews", foreignKey: "customerId" });
+Product.hasMany(Review, { as: "reviews", foreignKey: "productId" });
+
 module.exports = {
   Category,
   Vendor,
@@ -655,4 +736,5 @@ module.exports = {
   Cart,
   Wishlist,
   ProductImage,
+  Review,
 };

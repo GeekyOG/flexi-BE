@@ -12,6 +12,8 @@ const {
   getAddresses,
   updateAddress,
   deleteAddress,
+  forgotPassword,
+  resetPassword,
 } = require("../controllers/customerController");
 const { protect, authorize } = require("../middleware/auth");
 
@@ -19,26 +21,24 @@ const { protect, authorize } = require("../middleware/auth");
 router.post("/register", registerCustomer);
 router.post("/login", loginCustomer);
 
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
+
 // Protected routes
 router.get(
   "/",
   protect(["user"]),
   authorize("admin", "manager", "staff"),
-  getAllCustomers
+  getAllCustomers,
 );
 router.get("/me/profile", protect(["customer"]), getCustomerProfile);
-router.get(
-  "/:id",
-  protect(["user"]),
-  authorize("admin", "manager", "staff"),
-  getCustomer
-);
+router.get("/:id", protect(["user", "customer"]), getCustomer);
 router.put("/me", protect(["customer"]), updateCustomer);
 router.put(
   "/:id",
   protect(["user"]),
   authorize("admin", "manager"),
-  updateCustomer
+  updateCustomer,
 );
 router.delete("/:id", protect(["user"]), authorize("admin"), deleteCustomer);
 

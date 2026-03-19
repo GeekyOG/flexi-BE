@@ -11,6 +11,7 @@ const cartRoutes = require("./cartRoutes");
 const wishlistRoutes = require("./wishlistRoutes");
 const kycRoutes = require("./kycRoutes");
 const productImageRoutes = require("./productImageRoutes");
+const reviewRoutes = require("./reviews");
 
 router.use("/product-images", productImageRoutes);
 router.use("/products", productRoutes);
@@ -22,5 +23,6 @@ router.use("/sales", saleRoutes);
 router.use("/cart", cartRoutes);
 router.use("/wishlist", wishlistRoutes);
 router.use("/kyc", kycRoutes);
+router.use("review", reviewRoutes);
 
 module.exports = router;

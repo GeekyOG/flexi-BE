@@ -93,6 +93,110 @@ exports.loginCustomer = async (req, res) => {
   }
 };
 
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const customer = await Customer.findOne({ where: { email } });
+    if (!customer) {
+      // Return success anyway to avoid exposing which emails are registered
+      return res.status(200).json({
+        success: true,
+        message: "If that email exists, a reset token has been sent",
+      });
+    }
+
+    // Generate a secure random token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetTokenHash = crypto
+      .createHash("sha256")
+      .update(resetToken)
+      .digest("hex");
+
+    // Store the hashed token and expiry on the customer record
+    // Add resetPasswordToken (STRING) and resetPasswordExpires (DATE) columns to your Customer model
+    await customer.update({
+      resetPasswordToken: resetTokenHash,
+      resetPasswordExpires: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+    });
+
+    // TODO: Send resetToken (plain) via email to customer.email
+    // e.g. sendResetEmail(customer.email, resetToken)
+    // The URL would look like: https://yourapp.com/reset-password?token=<resetToken>
+
+    res.status(200).json({
+      success: true,
+      message: "If that email exists, a reset token has been sent",
+      // Remove token from response in production — only for development
+      ...(process.env.NODE_ENV === "development" && { resetToken }),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { token, password, confirmPassword } = req.body;
+
+    if (!token || !password || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Token, password, and confirmPassword are required",
+      });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Passwords do not match",
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters",
+      });
+    }
+
+    // Hash the incoming token to compare against the stored hash
+    const resetTokenHash = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex");
+
+    const customer = await Customer.findOne({
+      where: {
+        resetPasswordToken: resetTokenHash,
+        resetPasswordExpires: { [Op.gt]: new Date() }, // token must not be expired
+      },
+    });
+
+    if (!customer) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired reset token",
+      });
+    }
+
+    // Update password and clear the reset token fields
+    // The beforeUpdate hook in your model will hash the new password automatically
+    await customer.update({
+      password,
+      resetPasswordToken: null,
+      resetPasswordExpires: null,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successful. You can now log in.",
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // Get All Customers
 exports.getAllCustomers = async (req, res) => {
   try {
@@ -265,22 +369,32 @@ exports.getCustomerProfile = async (req, res) => {
 // Add Customer Address
 exports.addAddress = async (req, res) => {
   try {
-    const { address, city, state, postalCode, isDefault } = req.body;
+    const { label, address, city, state, country, postalCode, isDefault } =
+      req.body;
     const customerId = req.user.id;
+
+    if (!address || !city || !state || !country) {
+      return res.status(400).json({
+        success: false,
+        message: "address, city, state, and country are required",
+      });
+    }
 
     // If this is set as default, unset other defaults
     if (isDefault) {
       await CustomerAddress.update(
         { isDefault: false },
-        { where: { customerId } }
+        { where: { customerId } },
       );
     }
 
     const newAddress = await CustomerAddress.create({
       customerId,
+      label,
       address,
       city,
       state,
+      country, // ← was missing
       postalCode,
       isDefault: isDefault || false,
     });
@@ -323,39 +437,40 @@ exports.getAddresses = async (req, res) => {
 // Update Address
 exports.updateAddress = async (req, res) => {
   try {
-    const address = await CustomerAddress.findOne({
-      where: {
-        id: req.params.id,
-        customerId: req.user.id,
-      },
-    });
+    const { id } = req.params;
+    const customerId = req.user.id;
+    const { label, address, city, state, country, postalCode, isDefault } =
+      req.body;
 
-    if (!address) {
-      return res.status(404).json({
-        success: false,
-        message: "Address not found",
-      });
+    const existing = await CustomerAddress.findOne({
+      where: { id, customerId },
+    });
+    if (!existing) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Address not found" });
     }
 
-    // If setting as default, unset other defaults
-    if (req.body.isDefault) {
+    if (isDefault) {
       await CustomerAddress.update(
         { isDefault: false },
-        { where: { customerId: req.user.id } }
+        { where: { customerId } },
       );
     }
 
-    const updatedAddress = await address.update(req.body);
+    await existing.update({
+      label,
+      address,
+      city,
+      state,
+      country,
+      postalCode,
+      isDefault: isDefault ?? existing.isDefault,
+    });
 
-    res.status(200).json({
-      success: true,
-      data: updatedAddress,
-    });
+    res.status(200).json({ success: true, data: existing });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 

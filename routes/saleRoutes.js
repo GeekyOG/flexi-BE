@@ -11,12 +11,13 @@ const {
 const { protect, authorize } = require("../middleware/auth");
 
 // Protected routes
-router.post("/initialize", protect(["customer"]), initializePayment);
-router.get("/verify/:reference", verifyPayment);
+router.post("/payment/initialize", protect(["customer"]), initializePayment);
+router.get("/payment/verify/:reference", verifyPayment);
 router.post(
   "/additional-payment",
+
   protect(["customer"]),
-  makeAdditionalPayment
+  makeAdditionalPayment,
 );
 router.get("/", protect(["user", "vendor"]), getAllSales);
 router.get("/:id", protect(["user", "vendor", "customer"]), getSale);
